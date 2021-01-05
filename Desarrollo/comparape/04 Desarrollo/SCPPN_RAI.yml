@@ -1,0 +1,71 @@
+- name: Basic mysql provisioning example
+  community.aws.rds:
+    command: create
+    instance_name: new-database
+    db_engine: MySQL
+    size: 10
+    instance_type: db.m1.small
+    username: mysql_admin
+    password: 1nsecure
+    tags:
+      Environment: testing
+      Application: cms
+
+- name: Create a read-only replica and wait for it to become available
+  community.aws.rds:
+    command: replicate
+    instance_name: new-database-replica
+    source_instance: new_database
+    wait: yes
+    wait_timeout: 600
+
+- name: Delete an instance, but create a snapshot before doing so
+  community.aws.rds:
+    command: delete
+    instance_name: new-database
+    snapshot: new_database_snapshot
+
+- name: Get facts about an instance
+  community.aws.rds:
+    command: facts
+    instance_name: new-database
+  register: new_database_facts
+
+- name: Rename an instance and wait for the change to take effect
+  community.aws.rds:
+    command: modify
+    instance_name: new-database
+    new_instance_name: renamed-database
+    wait: yes
+
+- name: Reboot an instance and wait for it to become available again
+  community.aws.rds:
+    command: reboot
+    instance_name: database
+    wait: yes
+
+# Restore a Postgres db instance from a snapshot, wait for it to become available again, and
+#  then modify it to add your security group. Also, display the new endpoint.
+#  Note that the "publicly_accessible" option is allowed here just as it is in the AWS CLI
+- community.aws.rds:
+    command: restore
+    snapshot: mypostgres-snapshot
+    instance_name: MyNewInstanceName
+    region: us-west-2
+    zone: us-west-2b
+    subnet: default-vpc-xx441xxx
+    publicly_accessible: yes
+    wait: yes
+    wait_timeout: 600
+    tags:
+        Name: pg1_test_name_tag
+  register: rds
+
+- community.aws.rds:
+    command: modify
+    instance_name: MyNewInstanceName
+    region: us-west-2
+    vpc_security_groups: sg-xxx945xx
+
+- ansible.builtin.debug:
+    msg: "The new db endpoint is {{ rds.instance.endpoint }}"
