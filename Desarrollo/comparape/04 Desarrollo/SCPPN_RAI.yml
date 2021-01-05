@@ -1,4 +1,4 @@
-- name: Basic mysql provisioning example
+- name: Basic mysql provisioning example and ecs
   community.aws.rds:
     command: create
     instance_name: new-database
